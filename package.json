@@ -10,7 +10,8 @@
   "scripts": {
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:boundary": "node scripts/check-engine-boundary.mjs && node --test scripts/check-engine-boundary.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

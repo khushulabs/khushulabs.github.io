@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Permissions and the boot receiver are added to the host app by the config plugin (plugin/). -->
+<manifest />

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Neutral defaults. The host app passes its own notice text and labels through setPlan(). -->
+<resources>
+  <string name="khushu_engine_notice_title">Silenced</string>
+  <string name="khushu_engine_notice_body">Back on at {until}</string>
+  <string name="khushu_engine_unmute_now">Unmute now</string>
+  <string name="khushu_engine_rule_name">Silence</string>
+</resources>
