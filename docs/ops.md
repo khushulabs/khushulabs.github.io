@@ -12,6 +12,6 @@ Org: [khushulabs](https://github.com/khushulabs). Repo: `khushulabs/khushulabs.g
 - [x] Actions: workflow token is read-only by default; actions pinned to full commit SHAs
 - [x] CI `security` workflow: gitleaks (checksum-verified binary) plus a grep that fails on `service_role` and server secrets
 - [x] Dependabot keeps pinned GitHub Actions up to date
-- [ ] A planted fake key fails CI (test PR, closed without merging)
+- [x] A planted fake key fails CI (test PR #3, closed without merging)
 
 Rules: never commit a Supabase service_role key or any server secret. Secrets live only in GitHub Environment secrets.
