@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  # Cancel superseded PR runs only; every push to main finishes (and saves caches).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -38,3 +43,117 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+  # D42: modules/khushu-engine must stay app-agnostic. No paths filter, so this
+  # job always reports and can be a required check. Needs only Node and git.
+  # The word `khushu` is allowed on purpose (the engine's current name).
+  engine-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Self-test the boundary check
+        run: node --test scripts/check-engine-boundary.test.mjs
+
+      - name: Check file names and contents in modules/khushu-engine
+        run: node scripts/check-engine-boundary.mjs modules/khushu-engine
+
+  # Generates the Android project (CNG) and builds a debug APK for one ABI.
+  # Proves "prebuild is clean" and that the engine's Kotlin compiles.
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NDK_VERSION: 27.1.12297006
+      CMAKE_VERSION: 3.22.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Setup Java
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+          # android/ does not exist until prebuild, so key the cache on inputs that do.
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            modules/khushu-engine/android/build.gradle
+          # Only main writes the large Gradle cache; PRs restore it.
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      # The runner image doesn't ship the NDK and CMake versions React Native
+      # pins (react-native/gradle/libs.versions.toml), so cache them instead of
+      # letting AGP download them on every run. Bump with React Native.
+      - name: Locate the Android SDK
+        run: echo "SDK_DIR=${ANDROID_HOME}" >> "$GITHUB_ENV"
+
+      - name: Restore NDK and CMake
+        id: ndk-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ env.SDK_DIR }}/ndk/${{ env.NDK_VERSION }}
+            ${{ env.SDK_DIR }}/cmake/${{ env.CMAKE_VERSION }}
+          key: android-ndk-${{ env.NDK_VERSION }}-cmake-${{ env.CMAKE_VERSION }}
+
+      - name: Install NDK and CMake
+        if: steps.ndk-cache.outputs.cache-hit != 'true'
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;${NDK_VERSION}" "cmake;${CMAKE_VERSION}" > /dev/null
+
+      - name: Save NDK and CMake
+        if: github.event_name == 'push' && steps.ndk-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ env.SDK_DIR }}/ndk/${{ env.NDK_VERSION }}
+            ${{ env.SDK_DIR }}/cmake/${{ env.CMAKE_VERSION }}
+          key: android-ndk-${{ env.NDK_VERSION }}-cmake-${{ env.CMAKE_VERSION }}
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Check the cached NDK matches React Native
+        run: |
+          toml="$(dirname "$(node -p "require.resolve('react-native/package.json', { paths: ['apps/mobile'] })")")/gradle/libs.versions.toml"
+          want="$(sed -nE 's/^ndkVersion = "(.*)"/\1/p' "$toml")"
+          if [ "$want" != "$NDK_VERSION" ]; then
+            echo "::warning::React Native wants NDK $want but NDK_VERSION is $NDK_VERSION; update ci.yml so the cache is used."
+          fi
+
+      - name: Expo prebuild (must be clean)
+        working-directory: apps/mobile
+        env:
+          CI: "1"
+        run: |
+          set -o pipefail
+          pnpm exec expo prebuild -p android --clean 2>&1 | tee prebuild.log
+          if grep -niE '^\s*(»|⚠|warn)' prebuild.log; then
+            echo "::error::expo prebuild printed warnings"
+            exit 1
+          fi
+
+      - name: Build debug APK (x86_64 only)
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleDebug -PreactNativeArchitectures=x86_64 --no-daemon --stacktrace

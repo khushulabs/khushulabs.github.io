@@ -6,6 +6,11 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: dco-${{ github.ref }}
+  # Cancel superseded PR runs only; every push to main finishes (and saves caches).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   signoff:
     runs-on: ubuntu-latest
