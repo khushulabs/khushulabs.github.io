@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Khushu",
+    "slug": "khushu",
+    "version": "0.1.0",
+    "scheme": "khushu",
+    "platforms": [
+      "android"
+    ],
+    "orientation": "portrait",
+    "android": {
+      "package": "io.github.khushulabs.khushu",
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      "expo-dev-client",
+      "khushu-engine"
+    ]
+  }
+}
