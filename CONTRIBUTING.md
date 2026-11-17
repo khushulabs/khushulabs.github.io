@@ -19,13 +19,14 @@ pnpm test
 Every commit must include a `Signed-off-by:` trailer, certifying the [Developer Certificate of Origin](https://developercertificate.org/). There is no CLA.
 
 - On the command line, commit with `git commit -s`.
-- Commits made through the GitHub website are signed off automatically.
+- Web commits in this repository are signed off automatically. On a fork, turn on *Require contributors to sign off on web-based commits*, or commit with `git commit -s`.
 
 A pull request whose commits are missing a sign-off will fail the DCO check.
 
 ## Pull requests
 
-- Create your branch in this repository (you do not need to fork).
+- Maintainers and collaborators with write access create their branch in this repository directly.
+- Outside contributors fork the repository and open a pull request from a branch in their fork.
 - Keep the pull request small and focused on one task.
 - Link the Khushu issue in the description, for example `Closes #5` and `KH-007`.
 - Every pull request needs one approval.

@@ -1,13 +1,14 @@
 {
   "name": "khushu",
   "private": true,
+  "license": "GPL-3.0-or-later",
   "type": "module",
   "packageManager": "pnpm@10.34.6",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit -p packages/contracts && tsc --noEmit -p packages/schedule",
+    "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint .",
     "test": "vitest run"
   },
