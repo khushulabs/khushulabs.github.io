@@ -1,0 +1,55 @@
+name: dco
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  signoff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check Signed-off-by trailer
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if ! git cat-file -e "${BASE_SHA}^{commit}" || ! git cat-file -e "${HEAD_SHA}^{commit}"; then
+            echo "Could not find the pull request base or head commit. fetch-depth must be 0."
+            exit 1
+          fi
+
+          commits="$(git rev-list --reverse "${BASE_SHA}..${HEAD_SHA}")"
+          if [ -z "${commits}" ]; then
+            echo "No commits to check."
+            exit 0
+          fi
+
+          failed=0
+          while IFS= read -r sha; do
+            body="$(git log -1 --format='%B' "${sha}")"
+            if ! printf '%s\n' "${body}" | grep -qE '^Signed-off-by: .+ <.+>$'; then
+              subject="$(git log -1 --format='%s' "${sha}")"
+              echo "Missing Signed-off-by: ${sha} ${subject}"
+              failed=1
+            fi
+          done <<< "${commits}"
+
+          if [ "${failed}" -ne 0 ]; then
+            echo
+            echo "Every commit must have a Signed-off-by trailer."
+            echo "Create commits with: git commit -s"
+            echo "GitHub web commits are signed off automatically."
+            exit 1
+          fi
+
+          echo "All commits have a Signed-off-by trailer."
