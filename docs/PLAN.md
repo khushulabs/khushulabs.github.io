@@ -232,7 +232,7 @@ Rules:
   - Protect `main`: PRs required, no force pushes.
   - Set up a `prod` Environment for secrets.
   - Turn on gitleaks and Dependabot. Pin all actions to full SHAs.
-  - Add a CI grep for `service_role`, `sb_secret_` and JWT patterns in `dist/` and the APK (switch it on once builds exist).
+  - Add a CI grep for the Supabase service-role key name, secret-key prefix and JWT patterns in `dist/` and the APK (switch it on once builds exist; exact patterns live in `.github/workflows/security.yml`).
 - **Done when:**
   - The checklist in `docs/ops.md` is ticked.
   - A planted fake key fails CI.
