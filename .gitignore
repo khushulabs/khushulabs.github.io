@@ -1,0 +1,22 @@
+# Dependencies and tooling
+node_modules/
+.pnpm-store/
+
+# Build and test output
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and OS / editor noise
+*.log
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.cache/
