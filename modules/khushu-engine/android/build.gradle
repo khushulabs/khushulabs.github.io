@@ -1,0 +1,19 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Khushu contributors
+
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'io.github.khushulabs.engine'
+// Keep in sync with package.json "version" (checked by src/version.test.ts).
+version = '0.1.0'
+
+android {
+  namespace = "io.github.khushulabs.engine"
+  lint {
+    // Template default; switch to true once the engine has real code.
+    abortOnError = false
+  }
+}
