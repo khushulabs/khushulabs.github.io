@@ -1,4 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- Permissions and the boot receiver are added to the host app by the config plugin (plugin/). -->
-<manifest />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <receiver
+      android:name="io.github.khushulabs.engine.AlarmReceiver"
+      android:exported="false" />
+    <!-- Owner of our Do Not Disturb rule. It does nothing; the rule is switched from the app process. -->
+    <service
+      android:name="io.github.khushulabs.engine.RuleOwnerService"
+      android:exported="true"
+      android:permission="android.permission.BIND_CONDITION_PROVIDER_SERVICE">
+      <intent-filter>
+        <action android:name="android.service.notification.ConditionProviderService" />
+      </intent-filter>
+    </service>
+  </application>
+</manifest>
