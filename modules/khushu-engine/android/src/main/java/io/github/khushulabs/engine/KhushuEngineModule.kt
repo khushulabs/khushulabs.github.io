@@ -9,37 +9,56 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import expo.modules.kotlin.exception.CodedException
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
-class NotImplementedException(what: String) :
-  CodedException("NOT_IMPLEMENTED", "$what is not implemented yet", null)
-
 /**
- * Skeleton of the engine. ping() is real; setPlan/setFences keep the input in
- * memory; the rest return safe defaults or reject with NOT_IMPLEMENTED.
+ * The engine's Android side. setPlan, startManual, stopSilence, getStatus,
+ * getHistory, checkPermissions and openPermissionSettings are real (spike S-A);
+ * setFences keeps its input in memory until the geofence work.
  */
 class KhushuEngineModule : Module() {
   // Written from AsyncFunctions, read from getDiagnostics. Moves into the engine store in KH-018.
-  @Volatile private var plan: PlanRecord? = null
   @Volatile private var fences: List<FenceRecord> = emptyList()
 
   private val context: Context
     get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
+
+  private val controller: SilenceController
+    get() = SilenceController.get(context)
 
   override fun definition() = ModuleDefinition {
     Name("KhushuEngine")
 
     Events(STATUS_CHANGED)
 
+    OnCreate {
+      SilenceController.get(context).listener = { status -> sendEvent(STATUS_CHANGED, status) }
+    }
+
+    OnDestroy {
+      runCatching { SilenceController.get(context).listener = null }
+    }
+
     Function("ping") {
       ENGINE_VERSION
     }
 
+    Function("formatTime") { at: Double, withSeconds: Boolean ->
+      controller.formatTime(at.toLong(), withSeconds)
+    }
+
     AsyncFunction("setPlan") { next: PlanRecord ->
-      plan = next
+      controller.setPlan(
+        PlanData(
+          ruleName = next.ruleName,
+          title = next.notice.title,
+          body = next.notice.body,
+          unmuteLabel = next.unmuteLabel,
+          windows = next.windows.map { WindowData(it.id, it.startsAt.toLong(), it.endsAt.toLong()) },
+        ),
+      )
     }
 
     AsyncFunction("setFences") { next: List<FenceRecord> ->
@@ -47,30 +66,29 @@ class KhushuEngineModule : Module() {
     }
 
     AsyncFunction("getStatus") {
-      idleStatus()
+      controller.status()
     }
 
-    AsyncFunction("startManual") { _: Double ->
-      notImplemented("startManual")
+    AsyncFunction("startManual") { minutes: Double ->
+      controller.startManual(minutes)
     }
 
     AsyncFunction("stopSilence") {
-      // Nothing is ever silenced by the skeleton, so there is nothing to restore.
-      Unit
+      controller.stopSilence()
     }
 
     AsyncFunction("getHistory") {
-      emptyList<Map<String, Any?>>()
+      controller.history()
     }
 
     AsyncFunction("getDiagnostics") {
       mapOf(
         "engineVersion" to ENGINE_VERSION,
         "platformSdk" to Build.VERSION.SDK_INT,
-        "windowCount" to (plan?.windows?.size ?: 0),
+        "windowCount" to controller.windowCount(),
         "fenceCount" to fences.size,
         "lastFenceEventAt" to null,
-        "lastAlarmAt" to null,
+        "lastAlarmAt" to controller.lastAlarmAt()?.toDouble(),
         "lastFixAt" to null,
         "permissions" to permissionState(),
       )
@@ -81,20 +99,9 @@ class KhushuEngineModule : Module() {
     }
 
     AsyncFunction("openPermissionSettings") { kind: String ->
-      notImplemented("openPermissionSettings($kind)")
+      context.startActivity(controller.settingsIntent(kind))
     }
   }
-
-  // Declared as Unit so the AsyncFunction lambdas keep a concrete return type.
-  private fun notImplemented(what: String): Unit = throw NotImplementedException(what)
-
-  private fun idleStatus(): Map<String, Any?> = mapOf(
-    "state" to "idle",
-    "reason" to null,
-    "activeWindowId" to null,
-    "silencedUntil" to null,
-    "updatedAt" to System.currentTimeMillis().toDouble(),
-  )
 
   private fun runtime(permission: String): String =
     if (context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED) GRANTED else DENIED

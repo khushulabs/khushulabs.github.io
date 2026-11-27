@@ -6,16 +6,17 @@ Status: skeleton (version 0.1.0). All times are Unix epoch milliseconds.
 | Call | Today | Later |
 | --- | --- | --- |
 | `ping(): string` | Returns the engine version (sync). | Same. |
-| `setPlan(plan: Plan): Promise<void>` | Validates in JS (rejects with `Invalid plan: …`), then keeps the plan in memory. | Persists it and arms alarms per window. |
+| `formatTime(at: number, withSeconds?: boolean): string` | Time text in the phone's 12/24-hour setting and language (sync). The notification's `{until}` uses it. | Same. |
+| `setPlan(plan: Plan): Promise<void>` | Validates in JS (rejects with `Invalid plan: …`), saves it, arms one exact alarm per future window (`setWindow` fallback plus a Doze-exempt backup) and silences at once if a window is open. | Same. |
 | `setFences(fences: Fence[]): Promise<void>` | Validates in JS (rejects with `Invalid fences: …`), then keeps the fences in memory. | Registers geofences. |
-| `getStatus(): Promise<Status>` | Always `idle`. | Current state from the reducer. |
-| `startManual(durationMinutes: number): Promise<void>` | Rejects with `Invalid duration: …` unless 0 < minutes ≤ 1440, otherwise with `NOT_IMPLEMENTED`. | Silences now and restores after the duration. |
-| `stopSilence(): Promise<void>` | Resolves (nothing is ever silenced yet). | Restores sound and ends the session. |
-| `getHistory(): Promise<HistoryEvent[]>` | Empty list. | The last 30 events. |
-| `getDiagnostics(): Promise<Diagnostics>` | Version, SDK level, counts and real permission states. | Plus last fence event, alarm and fix times. |
+| `getStatus(): Promise<Status>` | `idle`, `armed` or `silenced`; restores first if a silence has run out. | Same. |
+| `startManual(durationMinutes: number): Promise<void>` | Rejects with `Invalid duration: …` unless 0 < minutes ≤ 1440. Silences now with our own Do Not Disturb rule and restores after the duration; rejects with `POLICY_ACCESS_DENIED` without access (Android 11+ only). | Same. |
+| `stopSilence(): Promise<void>` | Restores sound now, removes the notice and cancels the end alarm. | Same. |
+| `getHistory(): Promise<HistoryEvent[]>` | The last 300 events, oldest first (`detail` holds `key=value` facts such as `delta_ms` and `activation_ms`). | Same. |
+| `getDiagnostics(): Promise<Diagnostics>` | Version, SDK level, counts, last alarm time and real permission states. | Plus last fence event and fix time. |
 | `checkPermissions(): Promise<PermissionState>` | Real, read-only checks. | Same. |
-| `openPermissionSettings(kind: PermissionKind): Promise<void>` | Rejects with `NOT_IMPLEMENTED`. | Opens the matching system settings screen. |
-| `addStatusChangedListener(fn: (s: Status) => void): EventSubscription` | Never fires yet. | Fires on every state change (`statusChanged` event). |
+| `openPermissionSettings(kind: PermissionKind): Promise<void>` | Opens the matching system settings screen. | Same. |
+| `addStatusChangedListener(fn: (s: Status) => void): EventSubscription` | Fires on every state change while the app is open (`statusChanged` event). | Same. |
 
 ## Types
 

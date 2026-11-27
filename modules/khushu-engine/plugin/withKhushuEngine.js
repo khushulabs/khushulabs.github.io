@@ -31,7 +31,12 @@ const PERMISSIONS = [
  */
 const BLOCKED_PERMISSIONS = ["android.permission.USE_EXACT_ALARM"];
 
-const BOOT_ACTIONS = ["android.intent.action.BOOT_COMPLETED", "android.intent.action.MY_PACKAGE_REPLACED"];
+const BOOT_ACTIONS = [
+  "android.intent.action.BOOT_COMPLETED",
+  "android.intent.action.MY_PACKAGE_REPLACED",
+  // Sent when the user grants or revokes exact alarms, so the engine can re-arm.
+  "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED",
+];
 
 /**
  * @param {AndroidConfig.Manifest.AndroidManifest} manifest

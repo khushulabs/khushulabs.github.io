@@ -30,6 +30,14 @@ export function ping(): string {
   return native.ping();
 }
 
+/**
+ * Formats a time for people, following the phone's 12/24-hour setting and language
+ * (the same text the notification uses). Epoch milliseconds in.
+ */
+export function formatTime(at: number, withSeconds = false): string {
+  return native.formatTime(at, withSeconds);
+}
+
 /** Replaces the whole plan (rule name, notice text and time windows). */
 export async function setPlan(plan: Plan): Promise<void> {
   const problems = validatePlan(plan);

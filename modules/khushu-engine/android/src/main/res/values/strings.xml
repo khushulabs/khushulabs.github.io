@@ -6,4 +6,5 @@
   <string name="khushu_engine_notice_body">Back on at {until}</string>
   <string name="khushu_engine_unmute_now">Unmute now</string>
   <string name="khushu_engine_rule_name">Silence</string>
+  <string name="khushu_engine_channel_name">Silence status</string>
 </resources>

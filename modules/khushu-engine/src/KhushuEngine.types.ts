@@ -55,6 +55,7 @@ export type Status = {
 };
 
 export type HistoryEventType =
+  | "armed"
   | "window_open"
   | "window_close"
   | "fence_enter"

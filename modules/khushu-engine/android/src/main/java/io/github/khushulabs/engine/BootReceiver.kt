@@ -7,21 +7,35 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import kotlin.concurrent.thread
 
 /**
- * Re-arms alarms and fences after a reboot or an app update.
- * Stub for now: it only logs. Must never start a foreground service.
+ * Re-arms alarms after a reboot, an app update, or a change of the exact-alarm
+ * permission. Restores sound if a silence ran out while the device was off.
+ * Must never start a foreground service.
  */
 class BootReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
-    when (intent.action) {
-      Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED ->
-        Log.i(TAG, "received ${intent.action}; re-arm is not implemented yet")
-      else -> Unit
+    val action = intent.action ?: return
+    if (action !in HANDLED) return
+    val pending = goAsync()
+    val app = context.applicationContext
+    thread(name = "khushu-boot") {
+      try {
+        SilenceController.get(app).rearm(action)
+      } catch (t: Throwable) {
+        Log.e("KhushuEngine", "re-arm failed", t)
+      } finally {
+        pending.finish()
+      }
     }
   }
 
   private companion object {
-    const val TAG = "KhushuEngine"
+    val HANDLED = setOf(
+      Intent.ACTION_BOOT_COMPLETED,
+      Intent.ACTION_MY_PACKAGE_REPLACED,
+      "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED",
+    )
   }
 }

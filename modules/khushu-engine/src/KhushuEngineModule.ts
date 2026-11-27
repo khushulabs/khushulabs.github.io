@@ -16,6 +16,7 @@ import type {
 
 declare class KhushuEngineNativeModule extends NativeModule<KhushuEngineEvents> {
   ping(): string;
+  formatTime(at: number, withSeconds: boolean): string;
   setPlan(plan: Plan): Promise<void>;
   setFences(fences: Fence[]): Promise<void>;
   getStatus(): Promise<Status>;
